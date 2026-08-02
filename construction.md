@@ -1,4 +1,5 @@
 # LUTM-1 construction and latent-universality proof sketch
+> **Note:** This construction was developed entirely with the assistance of AI and has not been formally verified. Although the system has successfully synthesized and executed several nontrivial programs—including arbitrary-length binary squaring—it may still contain errors, and parts of the construction may be difficult to understand.
 
 This document describes the fixed Turing machine implemented by LUTM-1, the
 binary language used for its universal witness programs, and the reason the
