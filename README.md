@@ -1,22 +1,46 @@
 # LUTM-1
 
-LUTM-1 is a standalone research environment for a fixed **Latent Universal
-Turing Machine**. The transition rule never changes: evaluation, exhaustive
-enumeration, and evolutionary search vary only the literal binary program on
-the tape.
+> [!IMPORTANT]
+> This project was implemented with the help of AI, in particular GPT-5.6-Sol
+> through Codex. Extensive tests were run, but we cannot guarantee the total
+> absence of bugs or unintended behavior. Please report any problem through
+> [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues). The
+> project was built on Windows and has not been tested on Linux.
 
-It was developed alongside *Emergent Models: Intelligence from Tiny
-Substrates* as a practical substrate for studying latent universality and
-program synthesis under a fixed machine rule.
+LUTM-1 is an explicit **Latent Universal Turing Machine** and a research
+environment for searching programs that run on it. The machine has one fixed
+transition table. To change the task, we do not change that table: we change
+only a finite binary string placed on the tape.
 
-The repository contains one readable scalar reference simulator, matching
-bounded NumPy and Taichi/CUDA backends, a length-first program enumerator, a
-Taichi-evaluated island genetic algorithm, and a register of known programs.
+This repository grew out of the latent-universality idea in *Emergent Models:
+Intelligence from Tiny Substrates*. It is intended as a concrete machine for
+studying that idea, not as a claim that universal programs are easy to find or
+that this implementation is competitive with conventional programming or
+machine learning systems.
 
-## Machine interface
+## The central idea
 
-Every computation starts with the physical head at coordinate `0` in state
-`START`:
+An ordinary task-specific Turing machine stores its algorithm in its
+transition rule. A machine for addition and a machine for sorting will usually
+have different states and different transition tables.
+
+A universal Turing machine instead keeps one interpreter fixed and receives a
+description of another machine as data. LUTM-1 follows this universal-machine
+idea, but gives special attention to the interface needed for program search:
+
+- the machine rule is fixed;
+- the input is always written in the same literal binary format;
+- the output is always read in the same way;
+- only the binary program is varied between tasks.
+
+"Latent universal" is not a stronger notion of computability than ordinary
+Turing universality. It emphasizes *where the variable part lives*: the
+algorithm is a finite pattern in the initial tape state, while the substrate
+and the input/output interface remain fixed.
+
+## The `p#x` tape interface
+
+Let `p` be a binary program and `x` a binary input. Every run begins as:
 
 ```text
 ... B B p # x B B ...
@@ -24,34 +48,99 @@ Every computation starts with the physical head at coordinate `0` in state
      coordinate 0
 ```
 
-`p` is the binary program on negative coordinates, `#` is fixed initially at
-coordinate `0`, and `x` is the binary input on positive coordinates. The
-machine performs the complete computation itself. There is no preprocessing
-of the tape and no requirement that the program survive the computation.
+More explicitly:
 
-A successful result has all of these properties:
+- `p` occupies the negative tape coordinates;
+- `#` is at coordinate `0`;
+- `x` begins at coordinate `1`;
+- every other cell is blank (`B`);
+- the physical head begins on `#` in state `START`.
 
-- the physical machine reaches `HALT`;
-- `#` is present at coordinate `0` when it halts;
-- the maximal binary prefix beginning at coordinate `1` is nonempty.
+For example, program `00100` on input `1011` starts as:
 
-That prefix is the output. The final head location, the entire left side, and
-any symbols after the output prefix are intentionally ignored. A transition
-writes, moves, changes state, and then increments `T`. A halt reached on
-transition `T_max` succeeds; an unhalted machine after exactly `T_max`
-transitions times out.
+```text
+... B B 0 0 1 0 0 # 1 0 1 1 B B ...
+```
 
-The scalar simulator uses a self-extending, bi-infinite dictionary tape. The
-NumPy and Taichi backends use a finite tape with independently configurable
-left and right budgets. Both endpoint cells are usable; crossing an endpoint
-fails after the crossing transition has been counted. Space usage includes
-the initial program and input as well as every position visited by the head,
-including visited blank cells.
+The machine may overwrite the program, the separator, the input, or any other
+visited tape cell while it computes. There is no external preprocessing and
+no requirement that the program survive unchanged.
 
-## Windows setup
+When the machine reaches `HALT`, the decoder checks that `#` is again at
+coordinate `0`, then reads the consecutive `0` and `1` symbols immediately to
+its right. It stops at the first other symbol. The left side of the tape, the
+final head position, and later scratch symbols are ignored.
 
-From PowerShell, create an environment and install the pinned computational
-dependencies:
+```text
+... arbitrary residue # 1 0 0 1 X arbitrary residue ...
+                        \_______/
+                         output 1001
+```
+
+In the current research API, a missing separator or an empty output prefix is
+reported as an invalid computation. Timeouts and bounded-tape overflows are
+also explicit failures.
+
+## Why this is useful for machine learning
+
+Suppose we have examples of a target behavior:
+
+```text
+input  -> target
+0      -> 1
+1      -> 0
+01     -> 10
+10     -> 01
+```
+
+Because input placement, execution, and output decoding never change, a search
+algorithm can evaluate many candidate programs under exactly the same
+conditions. A program can be scored by how closely its outputs match the
+targets, then changed by operations such as bit flips, insertion, deletion,
+or crossover.
+
+This turns learning into **program synthesis over initial tape states**:
+
+```text
+candidate program -> fixed LUTM -> outputs -> fitness
+          ^                                  |
+          |________ mutation/selection ______|
+```
+
+The universality result says that sufficiently expressive finite programs
+exist in principle. It does **not** say that evolutionary search will find
+them efficiently. Searchability is an empirical research question, and long
+programs can produce extremely expensive physical computations.
+
+## What is included
+
+The repository provides three implementations of the same physical machine:
+
+| Implementation | What it does | Main use |
+|---|---|---|
+| Scalar Python | Runs one program and one input, one transition at a time, on a self-extending tape | Readable reference and long computations |
+| NumPy | Runs batches on a finite padded tape | CPU evaluation and exhaustive enumeration |
+| Taichi/CUDA | Runs many independent programs in parallel on the GPU | Fast enumeration and GA fitness evaluation |
+
+"Scalar", "NumPy", and "Taichi" describe the simulators, not different
+Turing machines. They load the same fixed transition table and use the same
+`p#x` semantics. The bounded implementations can additionally fail when their
+configured tape or time budget is exceeded.
+
+The repository also contains:
+
+- growing-length enumeration of raw binary programs;
+- a NumPy island genetic algorithm evaluated by Taichi/CUDA;
+- known programs for identity, bitwise NOT, `+1`, multiplication by two, and
+  squaring;
+- differential, arithmetic, boundary, GA, and stress tests.
+
+For the internal construction and the universality argument, see
+[construction.md](construction.md).
+
+## Start on Windows
+
+The project was developed with Python 3.10. From PowerShell:
 
 ```powershell
 conda create -n lutm1 python=3.10 -y
@@ -60,9 +149,8 @@ Set-Location LUTM-1
 python -m pip install -r .\requirements.txt
 ```
 
-The GPU backend is deliberately strict: it requires an NVIDIA CUDA device and
-does not fall back to CPU execution. If you already use the prepared
-`slackenv` environment, activate it instead.
+The Taichi backend requires an NVIDIA CUDA device and intentionally has no CPU
+fallback. The scalar and NumPy implementations do not require CUDA.
 
 Start Jupyter with:
 
@@ -70,191 +158,185 @@ Start Jupyter with:
 jupyter notebook
 ```
 
-The four notebooks are clean, editable research entry points:
+Then open one of these notebooks:
 
-1. `01_python_evaluator.ipynb` — unbounded scalar execution and registered
-   task verification;
-2. `02_numpy_simulator_and_enumerator.ipynb` — bounded NumPy execution,
-   input/target evaluation, and growing-length enumeration;
-3. `03_taichi_simulator_and_enumerator.ipynb` — the same bounded workflow on
-   CUDA;
-4. `04_temperature_island_ga.ipynb` — the Taichi-evaluated, NumPy-evolved
-   island GA with live training output.
+1. [`01_python_evaluator.ipynb`](01_python_evaluator.ipynb) introduces the
+   unbounded, nonparallel simulator and runs registered programs.
+2. [`02_numpy_simulator_and_enumerator.ipynb`](02_numpy_simulator_and_enumerator.ipynb)
+   runs padded NumPy batches and performs growing-length enumeration.
+3. [`03_taichi_simulator_and_enumerator.ipynb`](03_taichi_simulator_and_enumerator.ipynb)
+   provides the corresponding CUDA workflow.
+4. [`04_temperature_island_ga.ipynb`](04_temperature_island_ga.ipynb) is the
+   full island-GA research trainer with editable hyperparameters and live
+   progress output.
 
-Run notebooks from the repository root and select the environment containing
-the installed requirements.
+Run the notebooks from the repository root and select the Python environment
+in which the requirements were installed.
 
-## Minimal scalar run
+## A minimal computation
+
+The following runs the registered successor program on binary `1011` (decimal
+11):
 
 ```python
 from lutm import ScalarUTMSimulator
 from programs import get_program
 
 task = get_program("plus_one")
-result = ScalarUTMSimulator().run(task.program, "1011", t_max=10_000_000)
+result = ScalarUTMSimulator().run(
+    task.program,
+    "1011",
+    t_max=10_000_000,
+)
 
 print(result.output)          # 1100
-print(result.T)
-print(result.invalid_reason)
+print(result.T)               # physical transition count
+print(result.invalid_reason)  # NONE on success
 ```
 
-The scalar transition counter is a Python integer and accepts a timeout up to
-`2**64 - 1`. It has no space-failure mode.
+The scalar tape extends as needed in either direction. It has a time limit but
+no artificial space limit.
 
-## NumPy batches and enumeration
+## Program enumeration
 
-Bounded backends use fixed-width arrays. An effective program is right-aligned
-next to `#` and padded on the left with physical blanks. At width three the
-length-first enumeration is:
+For batching, programs occupy a fixed-width region and are padded on the left
+with physical blanks. At width three, enumeration proceeds by increasing
+effective length:
 
 ```text
-BBB, BB0, BB1, B00, B01, B10, B11,
-000, 001, 010, 011, 100, 101, 110, 111
+BBB
+BB0
+BB1
+B00
+B01
+B10
+B11
+000
+001
+010
+011
+100
+101
+110
+111
 ```
 
-Leading zeroes and the empty program are distinct valid candidates.
+Thus the empty program, leading-zero programs, and all ordinary binary strings
+are distinct candidates. The number of candidates through width $L_p$ is:
 
-```python
-from numpy_backend import NumpyUTMSimulator, find_exact_program
-from utils import SimulatorConfig, TaskCases
+$$
+N(L_p) = \sum_{k=0}^{L_p} 2^k = 2^{L_p+1}-1.
+$$
 
-task = TaskCases(
-    inputs=["0", "1", "01", "10"],
-    targets=["0", "1", "01", "10"],
-)
-simulator = NumpyUTMSimulator(
-    SimulatorConfig(
-        program_width=5,
-        left_budget=7,
-        right_budget=8,
-        t_max=1_000,
-    )
-)
-solution = find_exact_program(
-    simulator,
-    task,
-    batch_size=64,
-    stop_first_exact=True,
-    print_every_batches=1,
-)
-print(solution)
-```
+Ordinal enumeration is limited to width 62 by its integer representation.
+Explicitly supplied program batches may be wider.
 
-Ordinal enumeration is limited to program widths `1..62` so the entire
-length-first ordinal space is representable safely. Explicit program batches
-may be wider.
+## Evolutionary search
 
-## Taichi/CUDA
+The island GA keeps evolution on the CPU in vectorized NumPy and evaluates the
+physical computations on the GPU. Each island performs two-member tournament
+selection. The probability of choosing the fitter parent depends on the
+fitness difference, so small differences permit more exploratory selection.
 
-Programs are parallelized on the GPU; task inputs are evaluated serially. A
-single kernel launch runs each physical machine until halt, failure, or
-`T_max`. There is no transition chunking.
+Children can receive:
 
-```python
-from taichi_backend import TaichiUTMSimulator, initialize_taichi_cuda
-from utils import SimulatorConfig
+- segment crossover while inheriting the first parent's effective length;
+- insertion of a bit immediately to the left of the program;
+- deletion of the program's leftmost effective bit;
+- independent Bernoulli bit flips.
 
-initialize_taichi_cuda()
-gpu = TaichiUTMSimulator(
-    SimulatorConfig(80, 88, 24, 20_000),
-    batch_capacity=40_000,
-)
-programs = gpu.encode_programs(["00100"])
-result = gpu.simulate_program_batch(programs, "101110")
-print(result.output_strings(), result.T)
-```
+Equal-fitness children are preferred over older elites, allowing neutral
+movement. Islands periodically exchange candidates and receive random
+immigrants. The notebook exposes all probabilities and intervals directly.
 
-The NumPy and Taichi transition counters use `uint32`; `T_max` may be at most
-`4,294,967,295`. Head positions and the two directional space measurements
-use `int32`.
+Fitness is based on normalized positional bit accuracy with an additional
+penalty for invalid computations. Missing and extra output positions count as
+mismatches.
 
-## Island genetic algorithm
+## Known programs
 
-The GA evolves independent islands in vectorized NumPy and sends only physical
-program evaluation to Taichi/CUDA. Fitness is
+[`programs.py`](programs.py) contains an immutable register of verified binary
+programs, input contracts, and ordinary Python functions that compute their
+expected results.
 
-```text
-normalized positional bit accuracy
-    - k_penalty * invalid-case fraction
-```
+| Name | Bits | Behavior |
+|---|---:|---|
+| `identity_short` | 5 | Return the input unchanged |
+| `identity_complete` | 23 | Complete serialized identity witness |
+| `bit_not` | 80 | Flip every input bit |
+| `jump_probe` | 76 | Identity while exercising a forward state jump |
+| `jump_to_zero_probe` | 76 | Identity while jumping back to state zero |
+| `plus_one` | 176 | Canonical binary successor |
+| `times_two` | 114 | Canonical binary multiplication by two |
+| `square` | 4,605 | Canonical binary squaring |
+| `divergent_loop` | 24 | Deliberate nonhalting diagnostic |
 
-Missing and extra output bits are mismatches. Tournament size is always two.
-The probability of choosing the fitter contender follows configurable
-fitness-delta intervals; exact ties are sampled 50/50. Elitism prefers new
-children on equal fitness, encouraging neutral movement without an additional
-diversity metric.
+The arithmetic programs are length-independent algorithms rather than lookup
+tables. Squaring is physically very expensive; the test suite evaluates it on
+the scalar/CPU path and does not run it through Taichi.
 
-Each child independently receives segment crossover. Its effective length is
-inherited from parent 1, and one or more uniformly sampled parent-2 segments
-are copied inside the shared binary suffix. Segments may overlap. Mutation
-then draws one mutually exclusive structural action—insert, delete, or stay—
-and independently flips every effective bit with the configured Bernoulli
-probability. Islands periodically exchange elites and receive random
-immigrants.
+## Tests and reproducibility
 
-See `04_temperature_island_ga.ipynb` for the complete editable trainer.
-
-## Registered programs
-
-`programs.py` is the immutable program/task register. Each literal is checked
-against its declared SHA-256 digest when imported, and each computational task
-has an input contract and an oracle.
-
-| Name | Program bits | Behavior | Input contract |
-|---|---:|---|---|
-| `identity_short` | 5 | identity | nonempty binary string |
-| `identity_complete` | 23 | identity | nonempty binary string |
-| `bit_not` | 80 | pointwise bit NOT | nonempty binary string |
-| `jump_probe` | 76 | identity, forward-jump probe | nonempty binary string |
-| `jump_to_zero_probe` | 76 | identity, backward-jump probe | nonempty binary string |
-| `plus_one` | 176 | canonical binary `x + 1` | `0` or leading-one integer |
-| `times_two` | 114 | canonical binary `2x` | `0` or leading-one integer |
-| `square` | 4,605 | canonical binary `x²` | `0` or leading-one integer |
-| `divergent_loop` | 24 | timeout diagnostic | any binary string |
-
-The arithmetic literals are length-independent algorithms, not lookup tables.
-The square program is computationally expensive and is verified only through
-the scalar and NumPy implementations, never through the GPU test suite.
-
-## Verification
-
-Run the complete standalone suite from the repository root:
+Run the complete suite from the repository root:
 
 ```powershell
 conda activate slackenv
 python .\run_tests.py
 ```
 
-The suite validates the canonical CSV and program hashes, scalar semantics,
-input and padding rules, growing-length enumeration, NumPy/Taichi differential
-behavior, known programs, GA operators and reproducibility, bounded failures,
-and one 40,000-program CUDA stress run. The long square verification counts
-every physical transition and can take appreciable time.
+The suite checks:
 
-The authoritative transition table is
-`data/transition_table.csv`:
+- the transition-table and program hashes;
+- the exact initial tape and decoder behavior;
+- timeout and left/right boundary semantics;
+- exhaustive short-program agreement between scalar Python, NumPy, and
+  Taichi;
+- identity, bitwise NOT, `+1`, multiplication by two, and square programs;
+- enumeration order and exact-match stopping;
+- GA mutation, crossover, selection, migration, neutrality, and
+  reproducibility;
+- one 40,000-program CUDA stress run.
+
+The canonical physical rule is [`data/transition_table.csv`](data/transition_table.csv):
 
 ```text
 SHA-256 260fb1d15014523c6a46ede09f9fcd7cd7d591f668912842f1aae8cf993376f9
-150 states (including HALT), 16 symbols, 2,384 transition rows
+150 states including HALT
+16 tape symbols
+2,384 transition rows
 ```
 
-Changing this file changes the machine. The loader rejects an altered table.
+The CSV is intentionally preserved byte-for-byte by `.gitattributes` because
+the loader checks its raw hash. Changing it means changing the machine.
 
-## Repository layout
+## Repository map
 
 ```text
-data/transition_table.csv       canonical fixed rule
-data/square_program.txt         verified long square literal
+README.md                       introduction and usage
+construction.md                 machine construction and proof sketch
+data/transition_table.csv       canonical fixed machine rule
+data/square_program.txt         verified long square program
 lutm.py                         scalar simulator and table loader
-programs.py                     known programs, contracts, and oracles
+programs.py                     known programs and expected functions
 utils.py                        tasks, bounds, padding, and enumeration
-numpy_backend.py                bounded NumPy simulator and enumerator
-taichi_backend.py               strict-CUDA simulator and enumerator
+numpy_backend.py                bounded NumPy simulator
+taichi_backend.py               strict-CUDA simulator
 island_ga.py                    NumPy island GA with Taichi evaluation
-tests/                          standalone semantic and stress tests
+tests/                          verification and stress tests
 run_tests.py                    complete test entry point
 ```
+
+## Scope
+
+The construction establishes an expressivity result: a fixed machine and
+fixed interface can represent arbitrary computable behavior through finite
+programs. It does not establish efficient simulation, efficient training,
+robustness to malformed programs, or an absence of implementation bugs.
+
+The current runtime also treats an empty raw output as invalid. Full
+universality over binary strings including the empty string is recovered by a
+fixed outer output code; this point is explained precisely in
+[construction.md](construction.md#12-the-empty-output-convention).
 
 ## License
 
