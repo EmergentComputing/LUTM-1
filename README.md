@@ -1,9 +1,11 @@
 # LUTM-1
 
 LUTM-1 is an explicit **Latent Universal Turing Machine** and a research
-environment for searching programs that run on it. The machine has one fixed
-transition table. To change the task, we do not change that table: we change
-only a finite binary string placed on the tape.
+environment for searching programs that run on it. It is designed around a
+universal interface: the machine has one fixed transition table, every input
+is injected in the same literal binary form, and every output is decoded by
+the same rule. To change the task, we change only a finite binary program
+placed on the tape.
 
 This repository grew out of the latent-universality idea in *Emergent Models:
 Intelligence from Tiny Substrates*. It is intended as a concrete machine for
@@ -11,25 +13,51 @@ studying that idea, not as a claim that universal programs are easy to find or
 that this implementation is competitive with conventional programming or
 machine learning systems.
 
-## The central idea
+## Classical and latent universality
 
 An ordinary task-specific Turing machine stores its algorithm in its
 transition rule. A machine for addition and a machine for sorting will usually
 have different states and different transition tables.
 
-A universal Turing machine instead keeps one interpreter fixed and receives a
-description of another machine as data. LUTM-1 follows this universal-machine
-idea, but gives special attention to the interface needed for program search:
+Classical Turing universality removes that restriction: one fixed universal
+machine can simulate any other Turing machine when it receives a suitable
+encoding of both the simulated machine and its data. This establishes general
+computational expressivity, but it does not make a simple, shared external
+interface the central requirement. Different simulations may still be
+presented through different encodings or task-specific input and output
+conventions.
 
-- the machine rule is fixed;
-- the input is always written in the same literal binary format;
-- the output is always read in the same way;
-- only the binary program is varied between tasks.
+Latent universality separates two things explicitly:
 
-"Latent universal" is not a stronger notion of computability than ordinary
-Turing universality. It emphasizes *where the variable part lives*: the
-algorithm is a finite pattern in the initial tape state, while the substrate
-and the input/output interface remain fixed.
+- **program formulation:** the task-specific algorithm is the finite binary
+  program `p`;
+- **data injection:** the input `x` is always supplied literally through the
+  same tape layout, and the output is always read through the same decoder.
+
+In LUTM-1, that separation is summarized by one interface:
+
+```text
+algorithm p + literal data x  ->  p#x  ->  fixed LUTM  ->  residue#y
+```
+
+The task still needs an algorithm, represented by `p`. What disappears is the
+need for an algorithm- or datatype-specific mechanism to inject and recover
+the data. Once information is represented as a binary string, the same input
+placement and output convention can be used for identity, arithmetic, logical
+operations, sequence transformations, and any other computable binary-string
+function.
+
+This makes the interface analogous to a universal input format. The substrate,
+the representation of candidate programs, and the presentation of examples
+remain unchanged while search moves between programs and tasks. A learning
+system can therefore compare, mutate, enumerate, or evolve different
+algorithms directly on the same input format rather than rebuilding the
+execution interface for each one.
+
+"Latent universal" is not a stronger computability class than classical
+Turing universality. It highlights an architectural property: the algorithm
+is latent in a variable finite pattern of the initial tape, while the substrate
+and its externally visible input/output protocol stay fixed.
 
 ## The `p#x` tape interface
 
