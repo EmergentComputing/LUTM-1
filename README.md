@@ -50,20 +50,26 @@ Turing universality. The term highlights this fixed-interface organization and
 the fact that the algorithm is stored as a variable pattern in the initial
 tape rather than in the transition table.
 
-## Status of the universality claim
+## Status of this machine
 
-LUTM-1 was constructed with the intention of being Turing-complete.
+Latent universality itself is a proved general theorem. The unresolved question
+in this repository is narrower: whether this particular transition table,
+LUTM-1, is a correct concrete realization of that theorem.
+
+LUTM-1 was constructed to be Turing-complete through the fixed interface above.
 [`construction.md`](construction.md) gives an explicit simulation construction
 and a detailed proof sketch. The machine has also executed many compiled test
 cases, including length-independent arithmetic programs, with consistent
 results across independent simulator implementations.
 
-However, the universality argument has not yet been completed as a
-machine-checked formal proof or independently verified as a full mathematical
-proof. The academically accurate status is therefore that universality is a
-well-supported construction claim, not yet a formally established theorem.
-The construction and computational evidence provide strong confidence, but
-testing finitely many programs cannot by itself prove Turing completeness.
+The specific LUTM-1 construction has not yet been established by a complete,
+independently checked mathematical proof or a machine-checked formalization.
+It should therefore be regarded as a strongly supported candidate latent
+universal machine, rather than a formally certified instance. This qualification
+concerns LUTM-1 only; it does not concern the validity of the general latent
+universality theorem. Computational tests strengthen confidence in the
+construction, but finitely many successful programs cannot prove that this
+particular machine is universal.
 
 ## The `p#x` tape interface
 
