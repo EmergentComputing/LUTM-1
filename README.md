@@ -13,11 +13,11 @@ All three are ordinary binary strings. A program for addition and a program
 for a sequence operation therefore receive their inputs in exactly the same
 way and use exactly the same output decoder.
 
-This repository grew out of the latent-universality idea in *Emergent Models:
-Intelligence from Tiny Substrates*. It is intended as a concrete machine for
-studying that idea, not as a claim that universal programs are easy to find or
-that this implementation is competitive with conventional programming or
-machine learning systems.
+This repository grew out of the latent-universality idea in
+[*Emergent Models: Intelligence from Tiny Substrates*](https://arxiv.org/abs/2608.14019).
+It is intended as a concrete machine for studying that idea, not as a claim
+that universal programs are easy to find or that this implementation is
+competitive with conventional programming or machine learning systems.
 
 ## Classical and latent universality
 
@@ -40,8 +40,22 @@ then supplied through the same protocol. Structured data still needs a binary
 representation, but the LUTM itself does not need a new datatype-specific
 input or output mechanism.
 
+As explained in
+[*Emergent Models: Intelligence from Tiny Substrates*](https://arxiv.org/abs/2608.14019),
+the program carries the semantics of the algorithm: it specifies the general
+transformation from the input space to the output space. The fixed transition
+function and the encoding and decoding rules provide the syntax. They define
+how programs and data are placed, executed, and read, but they do not encode
+which task-specific transformation should be performed. In this precise sense,
+all task-specific computational meaning resides in `p`.
+
+The transition function still performs the physical computation step by step.
+Calling it syntactic means that it is task-independent: the same rule executes
+identity, arithmetic, and every other program. Only `p` determines which of
+those transformations the run represents.
+
 This separation is especially useful for program search. Enumeration or a
-learning algorithm can try many programs against the same input-target pairs
+learning algorithm can try many programs against the same input-target format
 without rebuilding the execution interface for each candidate or task. The
 program varies; the substrate and the meaning of `p#x` do not.
 
