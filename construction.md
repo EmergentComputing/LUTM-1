@@ -4,14 +4,6 @@ This document explains the construction of LUTM-1 and gives a proof sketch of
 its latent universality. It begins with the concrete execution model, then
 describes the internal markers and, finally, states the formal argument.
 
-> [!CAUTION]
-> The construction presented here was produced entirely by AI and has not been
-> formally verified. During development, the system successfully produced and
-> executed several nontrivial programs—including arbitrary-length binary
-> squaring—but the construction may still contain errors, and parts of its
-> explanation may be difficult to understand. Please report suspected problems
-> through [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues).
-
 The fixed transition table in
 [`data/transition_table.csv`](data/transition_table.csv) is the actual
 Turing machine. The Python, NumPy, and Taichi code only simulates that table;
@@ -507,3 +499,13 @@ SHA-256 260fb1d15014523c6a46ede09f9fcd7cd7d591f668912842f1aae8cf993376f9
 The CSV is preserved byte-for-byte as a binary Git artifact because this hash
 identifies the particular machine described here. A different hash is a
 different transition table and must be audited as a different machine.
+
+## Note on authorship and verification
+
+> [!NOTE]
+> This construction and its exposition were produced by AI, chiefly
+> GPT-5.6-Sol through Codex, and have not yet been formally verified. The
+> implementation has nevertheless compiled and executed several nontrivial
+> programs, including arbitrary-length binary squaring. Corrections and clearer
+> explanations are welcome through
+> [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues).

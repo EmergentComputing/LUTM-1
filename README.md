@@ -1,19 +1,5 @@
 # LUTM-1
 
-> [!IMPORTANT]
-> This project was implemented with the help of AI, in particular GPT-5.6-Sol
-> through Codex. Extensive tests were run, but we cannot guarantee the total
-> absence of bugs or unintended behavior. Please report any problem through
-> [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues). The
-> project was built on Windows and has not been tested on Linux.
-
-> [!CAUTION]
-> The construction presented in this repository was produced entirely by AI
-> and has not been formally verified. During development, the system
-> successfully produced and executed several nontrivial programs—including
-> arbitrary-length binary squaring—but the construction may still contain
-> errors, and parts of its explanation may be difficult to understand.
-
 LUTM-1 is an explicit **Latent Universal Turing Machine** and a research
 environment for searching programs that run on it. The machine has one fixed
 transition table. To change the task, we do not change that table: we change
@@ -423,6 +409,18 @@ The current runtime also treats an empty raw output as invalid. Full
 universality over binary strings including the empty string is recovered by a
 fixed outer output code; this point is explained precisely in
 [construction.md](construction.md#the-empty-output-convention).
+
+## Development note
+
+> [!NOTE]
+> This project was developed with substantial AI assistance, particularly from
+> GPT-5.6-Sol through Codex, and the construction document was produced by AI.
+> The implementation has undergone extensive automated testing, including
+> several nontrivial compiled programs such as arbitrary-length binary
+> squaring, but the construction has not yet been formally verified and bugs or
+> unintended behavior may remain. The project was built and tested on Windows
+> and has not yet been tested on Linux. Corrections and bug reports are welcome
+> through [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues).
 
 ## License
 
