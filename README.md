@@ -1,11 +1,17 @@
 # LUTM-1
 
-LUTM-1 is an explicit **Latent Universal Turing Machine** and a research
-environment for searching programs that run on it. It is designed around a
-universal interface: the machine has one fixed transition table, every input
-is injected in the same literal binary form, and every output is decoded by
-the same rule. To change the task, we change only a finite binary program
-placed on the tape.
+LUTM-1 is a fixed one-tape Turing machine designed to be a **Latent Universal
+Turing Machine**. Its central idea is simple: the machine and its input/output
+interface stay the same for every task. Only the program changes.
+
+```text
+program p + input x  ->  p#x  ->  fixed LUTM  ->  residue#y
+```
+
+Here `p` specifies the algorithm, `x` is the input data, and `y` is the output.
+All three are ordinary binary strings. A program for addition and a program
+for a sequence operation therefore receive their inputs in exactly the same
+way and use exactly the same output decoder.
 
 This repository grew out of the latent-universality idea in *Emergent Models:
 Intelligence from Tiny Substrates*. It is intended as a concrete machine for
@@ -15,49 +21,49 @@ machine learning systems.
 
 ## Classical and latent universality
 
-An ordinary task-specific Turing machine stores its algorithm in its
-transition rule. A machine for addition and a machine for sorting will usually
-have different states and different transition tables.
+Classical universality says that one fixed Turing machine can simulate any
+other Turing machine when given a description of that machine and its data. It
+is primarily a statement about computational power: one machine can perform
+every computable task.
 
-Classical Turing universality removes that restriction: one fixed universal
-machine can simulate any other Turing machine when it receives a suitable
-encoding of both the simulated machine and its data. This establishes general
-computational expressivity, but it does not make a simple, shared external
-interface the central requirement. Different simulations may still be
-presented through different encodings or task-specific input and output
-conventions.
+Latent universality keeps that goal but adds a practical interface principle:
+the algorithm and the data protocol are separate.
 
-Latent universality separates two things explicitly:
+- The program `p` is the part that selects the algorithm.
+- The input `x` is always placed literally to the right of `#`.
+- The output `y` is always read from that same location by the same rule.
 
-- **program formulation:** the task-specific algorithm is the finite binary
-  program `p`;
-- **data injection:** the input `x` is always supplied literally through the
-  same tape layout, and the output is always read through the same decoder.
+Changing the task means changing `p`; it does not mean changing the physical
+machine, the tape layout, or the decoder. In this sense, LUTM-1 provides a
+universal binary interface. Any finite kind of data can be serialized as bits,
+then supplied through the same protocol. Structured data still needs a binary
+representation, but the LUTM itself does not need a new datatype-specific
+input or output mechanism.
 
-In LUTM-1, that separation is summarized by one interface:
+This separation is especially useful for program search. Enumeration or a
+learning algorithm can try many programs against the same input-target pairs
+without rebuilding the execution interface for each candidate or task. The
+program varies; the substrate and the meaning of `p#x` do not.
 
-```text
-algorithm p + literal data x  ->  p#x  ->  fixed LUTM  ->  residue#y
-```
+Latent universality is not a stronger class of computability than classical
+Turing universality. The term highlights this fixed-interface organization and
+the fact that the algorithm is stored as a variable pattern in the initial
+tape rather than in the transition table.
 
-The task still needs an algorithm, represented by `p`. What disappears is the
-need for an algorithm- or datatype-specific mechanism to inject and recover
-the data. Once information is represented as a binary string, the same input
-placement and output convention can be used for identity, arithmetic, logical
-operations, sequence transformations, and any other computable binary-string
-function.
+## Status of the universality claim
 
-This makes the interface analogous to a universal input format. The substrate,
-the representation of candidate programs, and the presentation of examples
-remain unchanged while search moves between programs and tasks. A learning
-system can therefore compare, mutate, enumerate, or evolve different
-algorithms directly on the same input format rather than rebuilding the
-execution interface for each one.
+LUTM-1 was constructed with the intention of being Turing-complete.
+[`construction.md`](construction.md) gives an explicit simulation construction
+and a detailed proof sketch. The machine has also executed many compiled test
+cases, including length-independent arithmetic programs, with consistent
+results across independent simulator implementations.
 
-"Latent universal" is not a stronger computability class than classical
-Turing universality. It highlights an architectural property: the algorithm
-is latent in a variable finite pattern of the initial tape, while the substrate
-and its externally visible input/output protocol stay fixed.
+However, the universality argument has not yet been completed as a
+machine-checked formal proof or independently verified as a full mathematical
+proof. The academically accurate status is therefore that universality is a
+well-supported construction claim, not yet a formally established theorem.
+The construction and computational evidence provide strong confidence, but
+testing finitely many programs cannot by itself prove Turing completeness.
 
 ## The `p#x` tape interface
 
@@ -445,10 +451,10 @@ fixed outer output code; this point is explained precisely in
 > GPT-5.6-Sol through Codex, and the construction document was produced by AI.
 > The implementation has undergone extensive automated testing, including
 > several nontrivial compiled programs such as arbitrary-length binary
-> squaring, but the construction has not yet been formally verified and bugs or
-> unintended behavior may remain. The project was built and tested on Windows
-> and has not yet been tested on Linux. Corrections and bug reports are welcome
-> through [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues).
+> squaring, but bugs or unintended behavior may remain. The project was built
+> and tested on Windows and has not yet been tested on Linux. Corrections and
+> bug reports are welcome through
+> [GitHub Issues](https://github.com/EmergentComputing/LUTM-1/issues).
 
 ## License
 
