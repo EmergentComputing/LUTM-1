@@ -8,3 +8,6 @@ htmlcov/
 .idea/
 .vscode/
 *.log
+runs/
+mined_programs/
+formal/

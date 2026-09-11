@@ -150,8 +150,8 @@ For the internal construction and the universality argument, see
 The project was developed with Python 3.10. From PowerShell:
 
 ```powershell
-conda create -n lutm1 python=3.10 -y
-conda activate lutm1
+conda create -n slackenv python=3.10 -y
+conda activate slackenv
 Set-Location LUTM-1
 python -m pip install -r .\requirements.txt
 ```
@@ -179,6 +179,78 @@ Then open one of these notebooks:
 
 Run the notebooks from the repository root and select the Python environment
 in which the requirements were installed.
+
+## Live training control pad
+
+The control pad runs the same latest temperature island GA used by the fourth
+notebook and the program miner; all three import the single implementation in
+[`island_ga.py`](island_ga.py). Double-click [`run.bat`](run.bat) to activate
+the documented `slackenv` Conda environment, start the local server, and open
+the interface in the default browser. Equivalently, from an already activated
+environment:
+
+```powershell
+python .\control_pad.py
+```
+
+Set the datasets and structural parameters before starting a run. Structural
+parameters remain locked after initialization; editable training parameters
+are applied together at the next generation boundary. Training can be paused,
+continued, stopped, or saved manually. Reopening a run by its ID restores its
+population, random-number state, configuration history, datasets, and recorded
+diagnostics, then leaves it paused until explicitly continued.
+
+After **Stop & save** completes, **New run** unloads the stopped session and
+restores editable setup fields with a fresh run ID. The saved checkpoint is
+retained and can still be loaded later.
+
+The default diagnostic interval is 10 generations. Diagnostic generations
+report global and per-island performance, Q20/Q80 bands across island
+champions, and invalid rates for both the champions and the complete
+population. Time and space statistics use halted island champions only, with
+space defined as left space plus right space. Test cases are diagnostic only
+and never affect selection.
+
+Each run is stored as `runs/<run-id>/latest.npz`. The file is atomically
+replaced at each checkpoint, so a run ID always refers to one latest complete
+checkpoint. The `runs` directory is local research state and is ignored by
+Git.
+
+## Endless program miner
+
+[`program_miner.py`](program_miner.py) repeatedly samples a task uniformly
+with replacement, starts a fresh island population, and writes every valid
+program above that task's accuracy threshold to a deduplicated SQLite
+register. Mined programs are never used to seed later runs.
+
+Edit [`miner_config.json`](miner_config.json) for global defaults and
+[`miner_tasks.json`](miner_tasks.json) for input-target pairs and per-task
+simulator, GA, generation, and threshold overrides. Then run:
+
+```powershell
+conda activate slackenv
+python .\program_miner.py
+```
+
+Press `Ctrl+C` to finish the active run record, close SQLite, and exit cleanly.
+Use `--max-runs 1` for one finite episode. To recover the task and first run
+associated with a program:
+
+```powershell
+python .\program_miner.py --find 00100
+```
+
+Show global statistics, per-task program and exact-solution counts, tasks that
+admit an exact mined program, and the ten most recent runs:
+
+```powershell
+python .\program_miner.py --stats
+python .\program_miner.py --stats --recent 25
+```
+
+The default database is `mined_programs/programs.sqlite3`. Programs are
+bit-packed while preserving their exact lengths and leading zeros; the local
+database directory is ignored by Git.
 
 ## A minimal computation
 
@@ -329,6 +401,13 @@ utils.py                        tasks, bounds, padding, and enumeration
 numpy_backend.py                bounded NumPy simulator
 taichi_backend.py               strict-CUDA simulator
 island_ga.py                    NumPy island GA with Taichi evaluation
+control_pad_backend.py          live diagnostics and resumable GA sessions
+control_pad.py                  local control-pad server
+control_pad.html                control-pad interface
+run.bat                         Windows control-pad launcher
+program_miner.py                endless independent island-GA miner
+miner_config.json               miner defaults and database location
+miner_tasks.json                tasks and per-task overrides
 tests/                          verification and stress tests
 run_tests.py                    complete test entry point
 ```
