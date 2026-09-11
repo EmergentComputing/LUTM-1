@@ -24,7 +24,7 @@ machine learning systems.
 Classical universality says that one fixed Turing machine can simulate any
 other Turing machine when given a description of that machine and its data. It
 is primarily a statement about computational power: one machine can perform
-every computable task.
+every computable task by encoding together program AND input.
 
 Latent universality keeps that goal but adds a practical interface principle:
 the algorithm and the data protocol are separate.
